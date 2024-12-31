@@ -22,6 +22,8 @@ clean-targets:         # directories to be removed by `dbt clean`
   - "target"
   - "dbt_packages"
 
+on-run-start:
+  - "{{ get_brand_name() }}"
 
 # Configuring models
 # Full documentation: https://docs.getdbt.com/docs/configuring-models
@@ -32,5 +34,25 @@ clean-targets:         # directories to be removed by `dbt clean`
 models:
   lessons:
     # Config indicated by + and applies to all files under models/example/
-    example:
-      +materialized: view
+    +materialized: table
+    +persist_docs: # Writes all of our column descriptions into BigQuery!
+      relation: true
+      columns: true
+    # Table deletes 168 hours (7 days) after creation
+    # Table deletes 168 hours (7 days) after creation (or 1 hour if it's a CI test)
+    +hours_to_expiration: |
+      {% if target.name == 'test' %} 1
+      {% else %} 168
+      {% endif %}
+
+    staging:
+      +schema: staging
+    intermediate:
+      +schema: intermediate
+    marts:
+      +schema: marts
+
+tests:
+  lessons:
+    +severity: warn # All tests in our lesson project default to warn
+
